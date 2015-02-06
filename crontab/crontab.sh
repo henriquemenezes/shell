@@ -28,6 +28,7 @@ EOF
 # Check if number of arguments is equal to 0
 if [ $# -eq 0 ]; then
   usage
+  exit 0
 fi
 
 while getopts ":m::h" opt; do
