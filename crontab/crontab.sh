@@ -2,6 +2,7 @@
 
 # Default values
 OPT_M=1
+CRONTAB_LINE=
 
 header() {
   echo "    ___                _        _      "
@@ -12,12 +13,18 @@ header() {
   echo
 }
 
+header
+
 usage() {
   cat <<EOF
     Usage: $0 [OPTION] COMMAND
        or: $0 [OPTION] SCRIPT
 
-    Script to setup cron tasks in minutes.
+    Script to setup user cron tasks in minutes.
+    
+        Each user can have their own crontab, 
+        and though these are files in 
+          /var/spool/cron/crontabs
 
     OPTIONS:
       -h    Show help message
@@ -60,8 +67,33 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
-FILE=$1
+# COMMAND or SCRIPT
+RUN=$*
 
-echo $FILE
+echo "Crontab will run: $RUN"
+
+if ! [[ $OPT_M =~ ^[0-9]+$ ]]; then
+  echo "    error: minutes must be integer greater than or equal to 1."
+  echo
+  usage
+  exit 1
+elif [ $OPT_M -eq 1 ]; then
+  echo "Configuring task to run each 1 minute."
+  CRONTAB_LINE="* * * * * $RUN"
+elif [ $OPT_M -ge 1 ]; then
+  echo "Configuring task to run each $OPT_M minutes."
+  CRONTAB_LINE="*/$OPT_M * * * * $RUN"
+fi
+
+if $(crontab -l &> /dev/null) ; then
+  echo "Updating crontab user file!"
+  crontab -l > /tmp/crontab_$USER
+  echo "$CRONTAB_LINE" >> /tmp/crontab_$USER
+  crontab /tmp/crontab_$USER
+else
+  echo "Creating a new crontab file!"
+  echo "$CRONTAB_LINE" > /tmp/crontab_$USER
+  crontab /tmp/crontab_$USER
+fi
 
 exit 0
